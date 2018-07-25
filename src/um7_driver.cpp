@@ -134,7 +134,7 @@ bool sensor_rcv()
             imu_data_[2] = ntohl(imu_data_[2]);
             imu_data_[3] = ntohl(imu_data_[3]);
             memcpy(float_imu_data_, imu_data_, DATA_LENGTH);
-            if (is_set_offset_){
+            if (!is_set_offset_){
                 time_offset_ = ros::Time::now().toSec() - float_imu_data_[3];
                 is_set_offset_ = true;
             }

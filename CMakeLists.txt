@@ -16,14 +16,14 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED)
 
 catkin_package(
-  INCLUDE_DIRS include
+    #INCLUDE_DIRS include
   LIBRARIES um7_driver
   CATKIN_DEPENDS message_generation rospy roscpp sensor_msgs serial
   DEPENDS Boost
 )
 
 
-include_directories(include
+include_directories(#include
   ${catkin_INCLUDE_DIRS}
 )
 
