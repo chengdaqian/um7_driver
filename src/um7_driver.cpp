@@ -25,6 +25,7 @@ bool is_ned_to_nwu_;//North_East_Down to North_West_Up
 //flags and global containers
 double time_offset_;
 bool is_set_offset_ = false;
+uint8_t ignore_begin_num_ = 100, ignore_begin_cnt_ = 0;
 
 uint32_t imu_data_[8];//[gyro_x, gyro_y, gyro_z, gyro_stamp, acc_x, acc_y, acc_z, acc_stamp]
 float float_imu_data_[8];
@@ -127,6 +128,10 @@ bool sensor_rcv()
         }
 
         //! 4. Load data.
+        if (ignore_begin_cnt_ < ignore_begin_num_){
+            ignore_begin_cnt_++;
+            return false;
+        }
         if (address == GYRO_DREG_ADDR){
             memcpy(imu_data_,    data_in, DATA_LENGTH);
             imu_data_[0] = ntohl(imu_data_[0]);
