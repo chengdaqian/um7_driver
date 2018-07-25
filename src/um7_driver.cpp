@@ -13,25 +13,33 @@
 const int DATA_LENGTH = 16;
 const uint8_t GYRO_DREG_ADDR = 0x61;
 const uint8_t ACC_DREG_ADDR  = 0x65;
+const double GYRO_SCALE = 0.0174533;
+const double ACC_SCALE  = 9.80665;
+
+//params
 int baud_rate_;
 int data_rate_;
 std::string port_;
+bool is_ned_to_nwu_;//North_East_Down to North_West_Up
 
+//flags and global containers
 double time_offset_;
 bool is_set_offset_ = false;
-
-serial::Serial ser_;
-ros::Publisher imu_pub_;
 
 uint32_t imu_data_[8];//[gyro_x, gyro_y, gyro_z, gyro_stamp, acc_x, acc_y, acc_z, acc_stamp]
 float float_imu_data_[8];
 unsigned char  char_imu_data_[16];
+
+serial::Serial ser_;
+ros::Publisher imu_pub_;
+
 
 void read_param(ros::NodeHandle &nh)
 {
 	nh.param("port", port_, std::string("/dev/ttyUSB0"));
 	nh.param("baud_rate", baud_rate_, 115200);
 	nh.param("data_rate", data_rate_, 100);
+    nh.param("is_ned_to_nwu", is_ned_to_nwu_, true);
 }
 
 void init_serial()
@@ -174,13 +182,22 @@ void publish_data()
     sensor_msgs::Imu imu_ros;
     imu_ros.header.frame_id = std::string("imu_frame");
     imu_ros.header.stamp = ros::Time(float_imu_data_[3] + time_offset_);
-    imu_ros.angular_velocity.x = float_imu_data_[0];
-    imu_ros.angular_velocity.y = float_imu_data_[1];
-    imu_ros.angular_velocity.z = float_imu_data_[2];
-    imu_ros.linear_acceleration.x = float_imu_data_[4];
-    imu_ros.linear_acceleration.y = float_imu_data_[5];
-    imu_ros.linear_acceleration.z = float_imu_data_[6];
-
+    if (!is_ned_to_nwu_){
+        imu_ros.angular_velocity.x = float_imu_data_[0] * GYRO_SCALE;
+        imu_ros.angular_velocity.y = float_imu_data_[1] * GYRO_SCALE;
+        imu_ros.angular_velocity.z = float_imu_data_[2] * GYRO_SCALE;
+        imu_ros.linear_acceleration.x = float_imu_data_[4] * ACC_SCALE;
+        imu_ros.linear_acceleration.y = float_imu_data_[5] * ACC_SCALE;
+        imu_ros.linear_acceleration.z = float_imu_data_[6] * ACC_SCALE;
+    }else{// y,z axes takes on negative value
+        imu_ros.angular_velocity.x = float_imu_data_[0] * GYRO_SCALE;
+        imu_ros.angular_velocity.y = -float_imu_data_[1] * GYRO_SCALE;
+        imu_ros.angular_velocity.z = -float_imu_data_[2] * GYRO_SCALE;
+        imu_ros.linear_acceleration.x = float_imu_data_[4] * ACC_SCALE;
+        imu_ros.linear_acceleration.y = -float_imu_data_[5] * ACC_SCALE;
+        imu_ros.linear_acceleration.z = -float_imu_data_[6] * ACC_SCALE;
+    }
+    
     imu_pub_.publish(imu_ros);
 }
 
