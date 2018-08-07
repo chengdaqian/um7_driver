@@ -31,3 +31,7 @@ add_executable(um7_driver_node src/um7_driver.cpp)
 target_link_libraries(um7_driver_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(um7_driver_node ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
+add_executable(time_um7_driver src/time_um7_driver.cpp)
+target_link_libraries(time_um7_driver ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(time_um7_driver ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+
