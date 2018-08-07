@@ -29,6 +29,7 @@ uint8_t ignore_begin_num_ = 100, ignore_begin_cnt_ = 0;
 uint32_t imu_data_[8];//[gyro_x, gyro_y, gyro_z, gyro_stamp, acc_x, acc_y, acc_z, acc_stamp]
 float float_imu_data_[8];
 unsigned char  char_imu_data_[16];
+float imu_time_ = 0.0;
 
 serial::Serial ser_;
 ros::Publisher imu_pub_;
@@ -60,6 +61,12 @@ bool sensor_rcv()
     {
         static bool acc_flag = false; // publish after rcv acc
         while(!ser_.available()){
+            if (!is_set_offset_ && imu_time_ != 0.0){
+                is_set_offset_ = true;
+                time_offset_ = ros::Time::now().toSec() - imu_time_;
+            }else if(!is_set_offset_){
+                ROS_ERROR("No data in Buffer??? What's going ON???");
+            }
             ros::Duration(0.0001).sleep();
         }
         if (ser_.available() < 23){
@@ -126,10 +133,12 @@ bool sensor_rcv()
         }
 
         //! 4. Load data.
+        /*
         if (ignore_begin_cnt_ < ignore_begin_num_){
             ignore_begin_cnt_++;
             return false;
         }
+        */
         if (address == GYRO_DREG_ADDR){
             memcpy(imu_data_,    data_in, DATA_LENGTH);
             imu_data_[0] = ntohl(imu_data_[0]);
@@ -138,8 +147,7 @@ bool sensor_rcv()
             imu_data_[3] = ntohl(imu_data_[3]);
             memcpy(float_imu_data_, imu_data_, DATA_LENGTH);
             if (!is_set_offset_){
-                time_offset_ = ros::Time::now().toSec() - float_imu_data_[3];
-                is_set_offset_ = true;
+                imu_time_ = float_imu_data_[3];
             }
             memset(header_bytes, 0, 5); //clear header_bytes
             return false;
@@ -235,7 +243,7 @@ int main(int argc, char** argv)
                 //ser_.flushInput();
     			while (ros::ok())
     			{
-    				if (sensor_rcv())
+    				if (sensor_rcv() && is_set_offset_)
     				{
     					publish_data();
     				}
